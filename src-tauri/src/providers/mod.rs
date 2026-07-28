@@ -1,4 +1,5 @@
 pub mod interface;
+pub mod codex;
 pub mod cron;
 pub mod launchd;
 pub mod systemd;
@@ -10,7 +11,6 @@ pub mod future {
     //!
     //! Planned:
     //! - GitHub Actions
-    //! - Codex Scheduled Tasks
     //! - Docker scheduled jobs
     //! - Kubernetes CronJobs
     //! - n8n workflows

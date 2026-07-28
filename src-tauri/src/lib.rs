@@ -38,6 +38,7 @@ pub fn run() {
             let providers: Vec<Box<dyn SchedulerProvider>> = vec![
                 Box::new(providers::cron::CronProvider::new()),
                 Box::new(providers::launchd::LaunchdProvider::new()),
+                Box::new(providers::codex::CodexProvider::new()),
                 // Box::new(providers::systemd::SystemdProvider::new()),
                 // Box::new(providers::windows_task::WindowsTaskProvider::new()),
             ];
