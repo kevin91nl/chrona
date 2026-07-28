@@ -1,12 +1,49 @@
-import { useDiscoveryStats, useSchedulers } from "@hooks/useJobs";
+import { useMemo } from "react";
+import { useDiscoveryStats, useSchedulers, useFilteredJobs } from "@hooks/useJobs";
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/Card";
 import { StatCard } from "@components/ui/StatCard";
 import { Badge } from "@components/ui/Badge";
-import { Activity, Clock, AlertTriangle, Server, Zap } from "lucide-react";
+import { Activity, Clock, AlertTriangle, Server, Zap, ChevronRight } from "lucide-react";
+import type { View } from "@models/index";
 
-export function Dashboard() {
+interface DashboardProps {
+  onNavigate?: (view: View) => void;
+}
+
+export function Dashboard({ onNavigate }: DashboardProps) {
   const { stats, loading: statsLoading } = useDiscoveryStats();
   const { schedulers, loading: schedulersLoading } = useSchedulers();
+  const { jobs: filteredJobs } = useFilteredJobs();
+
+  const filteredStats = useMemo(() => {
+    if (!filteredJobs) return null;
+    const total = filteredJobs.length;
+    const active = filteredJobs.filter((j) => j.status === "active").length;
+    const failed = filteredJobs.filter((j) => j.status === "error").length;
+    const nextScheduled = filteredJobs
+      .filter((j) => j.nextExecution)
+      .sort((a, b) => a.nextExecution!.localeCompare(b.nextExecution!))[0];
+    return {
+      totalJobs: total,
+      activeJobs: active,
+      failedJobs: failed,
+      nextScheduled: nextScheduled
+        ? { job: nextScheduled, time: new Date(nextScheduled.nextExecution!).toLocaleString() }
+        : null,
+    };
+  }, [filteredJobs]);
+
+  const filteredSchedulers = useMemo(() => {
+    if (!schedulers || !filteredJobs) return schedulers;
+    const providerCounts = new Map<string, number>();
+    for (const j of filteredJobs) {
+      providerCounts.set(j.provider, (providerCounts.get(j.provider) ?? 0) + 1);
+    }
+    return schedulers.map((s) => ({
+      ...s,
+      jobCount: providerCounts.get(s.id) ?? 0,
+    }));
+  }, [schedulers, filteredJobs]);
 
   if (statsLoading || schedulersLoading) {
     return (
@@ -18,6 +55,8 @@ export function Dashboard() {
       </div>
     );
   }
+
+  const displayStats = filteredStats ?? stats;
 
   return (
     <div className="space-y-6 p-6">
@@ -33,25 +72,25 @@ export function Dashboard() {
         <StatCard
           icon={<Zap className="h-5 w-5" />}
           label="Total Jobs"
-          value={stats?.totalJobs ?? 0}
+          value={displayStats?.totalJobs ?? 0}
           description="Discovered"
         />
         <StatCard
           icon={<Server className="h-5 w-5" />}
           label="Schedulers"
-          value={stats?.schedulersDetected ?? 0}
+          value={filteredSchedulers?.filter((s) => s.available).length ?? 0}
           description="Detected"
         />
         <StatCard
           icon={<Clock className="h-5 w-5" />}
           label="Active Jobs"
-          value={stats?.activeJobs ?? 0}
+          value={displayStats?.activeJobs ?? 0}
           description="Enabled"
         />
         <StatCard
           icon={<AlertTriangle className="h-5 w-5" />}
           label="Failures"
-          value={stats?.failedJobs ?? 0}
+          value={displayStats?.failedJobs ?? 0}
           description="Recent"
         />
       </div>
@@ -64,10 +103,11 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {schedulers?.map((s) => (
+              {filteredSchedulers?.map((s) => (
                 <div
                   key={s.id}
-                  className="flex items-center justify-between rounded-md border p-3"
+                  onClick={() => onNavigate?.("system")}
+                  className="flex items-center justify-between rounded-md border p-3 cursor-pointer hover:bg-accent transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <div
@@ -84,6 +124,7 @@ export function Dashboard() {
                     <Badge variant={s.available ? "success" : "muted"}>
                       {s.available ? "Active" : "Unavailable"}
                     </Badge>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </div>
                 </div>
               ))}
@@ -102,14 +143,17 @@ export function Dashboard() {
             <CardTitle>Next Scheduled</CardTitle>
           </CardHeader>
           <CardContent>
-            {stats?.nextScheduled ? (
-              <div className="rounded-md border p-4">
-                <p className="font-medium">{stats.nextScheduled.job.name}</p>
+            {displayStats?.nextScheduled ? (
+              <div
+                onClick={() => onNavigate?.("jobs")}
+                className="rounded-md border p-4 cursor-pointer hover:bg-accent transition-colors"
+              >
+                <p className="font-medium">{displayStats.nextScheduled.job.name}</p>
                 <p className="text-sm text-muted-foreground">
-                  {stats.nextScheduled.job.command}
+                  {displayStats.nextScheduled.job.command}
                 </p>
                 <p className="mt-2 text-sm text-primary">
-                  {stats.nextScheduled.time}
+                  {displayStats.nextScheduled.time}
                 </p>
               </div>
             ) : (

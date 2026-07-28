@@ -29,11 +29,11 @@ export function useJobs(refreshKey?: number) {
 
 export function useFilteredJobs(refreshKey?: number) {
   const { jobs, loading } = useJobs(refreshKey);
-  const { isProviderEnabled } = useFilters();
+  const { enabledProviders } = useFilters();
 
   const filtered = useMemo(
-    () => (jobs ?? []).filter((j) => isProviderEnabled(j.provider)),
-    [jobs, isProviderEnabled],
+    () => (jobs ?? []).filter((j) => enabledProviders.has(j.provider)),
+    [jobs, enabledProviders],
   );
 
   return { jobs: filtered, loading };

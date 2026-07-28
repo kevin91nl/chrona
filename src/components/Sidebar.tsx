@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { cn } from "@/utils";
-import { useDiscoveryStats, useSchedulers } from "@hooks/useJobs";
+import { useSchedulers, useFilteredJobs } from "@hooks/useJobs";
 import { useFilters } from "@contexts/FilterContext";
 import {
   LayoutDashboard,
@@ -37,8 +37,8 @@ const PROVIDER_COLORS: Record<string, string> = {
 };
 
 export function Sidebar({ currentView, onNavigate }: SidebarProps) {
-  const { stats, loading } = useDiscoveryStats();
   const { schedulers } = useSchedulers();
+  const { jobs: filteredJobs, loading } = useFilteredJobs();
   const {
     enabledProviders,
     toggleProvider,
@@ -165,9 +165,10 @@ export function Sidebar({ currentView, onNavigate }: SidebarProps) {
             {loading ? "Scanning..." : "Live"}
           </span>
         </div>
-        {stats && !loading && (
+        {!loading && filteredJobs.length > 0 && (
           <p className="text-xs text-muted-foreground pl-4">
-            {stats.totalJobs} jobs across {stats.schedulersDetected} schedulers
+            {filteredJobs.length} jobs across{" "}
+            {new Set(filteredJobs.map((j) => j.provider)).size} schedulers
           </p>
         )}
       </div>
