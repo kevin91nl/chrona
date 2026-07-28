@@ -87,8 +87,17 @@ pub fn toggle_job_enabled(state: State<AppState>, id: String) -> Result<Job, Str
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "Job not found".to_string())?;
 
+    // Toggle at the provider level (writes to actual source file)
+    let new_enabled = crate::providers::actions::toggle_provider_job(&job)?;
+
+    // Update DB to match
     let mut updated = job.clone();
-    updated.enabled = !job.enabled;
+    updated.enabled = new_enabled;
+    updated.status = if new_enabled {
+        crate::models::JobStatus::Active
+    } else {
+        crate::models::JobStatus::Inactive
+    };
     updated.updated_at = chrono::Utc::now();
 
     state.repo.upsert_job(&updated).map_err(|e| e.to_string())?;

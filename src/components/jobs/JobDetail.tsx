@@ -26,6 +26,8 @@ export function JobDetail({ job, onBack, onJobChanged }: JobDetailProps) {
   const [currentJob, setCurrentJob] = useState(job);
   const [busy, setBusy] = useState<string | null>(null);
 
+  const canToggle = currentJob.provider === "cron" || currentJob.provider === "codex";
+
   const handleToggle = async () => {
     setBusy("toggle");
     try {
@@ -33,7 +35,7 @@ export function JobDetail({ job, onBack, onJobChanged }: JobDetailProps) {
       setCurrentJob(updated);
       onJobChanged?.();
     } catch (e) {
-      console.error("Toggle failed:", e);
+      alert(`Toggle failed: ${e}`);
     } finally {
       setBusy(null);
     }
@@ -98,11 +100,14 @@ export function JobDetail({ job, onBack, onJobChanged }: JobDetailProps) {
         <div className="flex items-center gap-2">
           <button
             onClick={handleToggle}
-            disabled={busy !== null}
+            disabled={busy !== null || !canToggle}
+            title={canToggle ? undefined : `${currentJob.provider} does not support pause/resume`}
             className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${
-              currentJob.enabled
-                ? "bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 border border-yellow-500/30"
-                : "bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/30"
+              !canToggle
+                ? "bg-muted text-muted-foreground border border-border cursor-not-allowed"
+                : currentJob.enabled
+                  ? "bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 border border-yellow-500/30"
+                  : "bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/30"
             }`}
           >
             {busy === "toggle" ? (

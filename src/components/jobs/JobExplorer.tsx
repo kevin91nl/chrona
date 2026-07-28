@@ -31,11 +31,15 @@ export function JobExplorer() {
 
   const handleQuickToggle = async (e: React.MouseEvent, job: Job) => {
     e.stopPropagation();
+    if (job.provider !== "cron" && job.provider !== "codex") {
+      alert(`${job.provider} does not support pause/resume`);
+      return;
+    }
     try {
       await toggleJobEnabled(job.id);
       refresh();
     } catch (err) {
-      console.error("Toggle failed:", err);
+      alert(`Toggle failed: ${err}`);
     }
   };
 
