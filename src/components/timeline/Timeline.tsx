@@ -1,7 +1,7 @@
 import { useFilteredJobs as useJobs } from "@hooks/useJobs";
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/Card";
 import { Badge } from "@components/ui/Badge";
-import { formatSchedule } from "@/utils";
+import { formatSchedule, formatRelativeTime } from "@/utils";
 import { Clock, AlertTriangle } from "lucide-react";
 
 function parseCronHour(schedule: string): number | null {
@@ -154,9 +154,15 @@ export function Timeline() {
 
                       {/* Next run */}
                       <div className="shrink-0 text-right pt-2">
-                        <span className="text-xs text-muted-foreground">
-                          {formatSchedule(job.schedule)}
-                        </span>
+                        {job.nextExecution ? (
+                          <span className="text-xs text-primary">
+                            {formatRelativeTime(job.nextExecution)}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            {formatSchedule(job.schedule)}
+                          </span>
+                        )}
                       </div>
                     </div>
                   );

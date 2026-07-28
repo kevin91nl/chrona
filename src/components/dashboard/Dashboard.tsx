@@ -1,10 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useSchedulers, useFilteredJobs } from "@hooks/useJobs";
 import { useFilters } from "@contexts/FilterContext";
+import { triggerDiscovery } from "@/tauri";
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/Card";
 import { StatCard } from "@components/ui/StatCard";
 import { Badge } from "@components/ui/Badge";
-import { Activity, Clock, AlertTriangle, Server, Zap } from "lucide-react";
+import { Activity, Clock, AlertTriangle, Server, Zap, RefreshCw } from "lucide-react";
 import type { View } from "@models/index";
 
 interface DashboardProps {
@@ -15,6 +16,20 @@ export function Dashboard({ onNavigate }: DashboardProps) {
   const { isProviderEnabled } = useFilters();
   const { schedulers, loading: schedulersLoading } = useSchedulers();
   const { jobs: filteredJobs, loading: statsLoading } = useFilteredJobs();
+  const [scanning, setScanning] = useState(false);
+
+  const handleScan = async () => {
+    setScanning(true);
+    try {
+      await triggerDiscovery();
+      // Reload the page data by waiting a tick
+      setTimeout(() => window.location.reload(), 500);
+    } catch (e) {
+      alert(`Scan failed: ${e}`);
+    } finally {
+      setTimeout(() => setScanning(false), 1000);
+    }
+  };
 
   const filteredStats = useMemo(() => {
     if (!filteredJobs) return null;
@@ -65,11 +80,21 @@ export function Dashboard({ onNavigate }: DashboardProps) {
 
   return (
     <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Automatic scheduling overview for this machine
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Automatic scheduling overview for this machine
+          </p>
+        </div>
+        <button
+          onClick={handleScan}
+          disabled={scanning}
+          className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-50"
+        >
+          <RefreshCw className={`h-4 w-4 ${scanning ? "animate-spin" : ""}`} />
+          {scanning ? "Scanning..." : "Scan now"}
+        </button>
       </div>
 
       {/* Stats grid */}

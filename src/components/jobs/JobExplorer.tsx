@@ -122,6 +122,9 @@ export function JobExplorer() {
                       {formatSchedule(job.schedule)}
                     </span>
                     <Badge variant="muted">{job.provider}</Badge>
+                    {!job.enabled && (
+                      <Badge variant="warning">Paused</Badge>
+                    )}
                     {job.nextExecution && (
                       <span className="text-xs text-muted-foreground">
                         {formatRelativeTime(job.nextExecution)}

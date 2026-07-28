@@ -4,15 +4,35 @@ import { Card, CardContent } from "@components/ui/Card";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
-function parseCronHour(schedule: string): number | null {
-  // "0 2 * * *" -> 2, "0 */6 * * *" -> null (multiple), "*/30 * * * *" -> null
-  const parts = schedule.split(" ");
-  if (parts.length < 2) return null;
-  const hour = parts[1];
-  if (hour === "*") return null;
-  if (hour.includes("/")) return null;
-  const h = parseInt(hour, 10);
-  return isNaN(h) ? null : h;
+/** Returns hours when a job runs, or null for "runs all hours" (intervals), or empty for unknown. */
+function parseScheduleHours(schedule: string): number[] | "all" | null {
+  const s = schedule.trim();
+
+  // Interval schedules: "Every N minutes", "Every N hours", "*/15 * * * *"
+  if (/^every\s+\d+\s+min/i.test(s) || /^every\s+\d+\s+hour/i.test(s)) {
+    return "all";
+  }
+
+  // Cron: "*/N * * * *" → runs every hour
+  const parts = s.split(" ");
+  if (parts.length >= 5 && parts[1] === "*") {
+    return "all";
+  }
+  // Cron: "*/N * * * *" (step in minute field, wildcard hour)
+  if (parts.length >= 5 && parts[0].includes("/") && parts[1] === "*") {
+    return "all";
+  }
+
+  // Cron with specific hour: "0 2 * * *" → [2]
+  if (parts.length >= 5) {
+    const hour = parts[1];
+    if (hour === "*") return "all";
+    if (hour.includes("/")) return "all";
+    const h = parseInt(hour, 10);
+    if (!isNaN(h)) return [h];
+  }
+
+  return null;
 }
 
 function getJobColor(provider: string): string {
@@ -45,10 +65,18 @@ export function CalendarView() {
   // Group jobs by hour
   const jobsByHour: Record<number, typeof jobs> = {};
   for (const job of jobs ?? []) {
-    const hour = parseCronHour(job.schedule);
-    if (hour !== null) {
-      if (!jobsByHour[hour]) jobsByHour[hour] = [];
-      jobsByHour[hour].push(job);
+    const hours = parseScheduleHours(job.schedule);
+    if (hours === "all") {
+      // Runs every hour — show in all 24 slots
+      for (let h = 0; h < 24; h++) {
+        if (!jobsByHour[h]) jobsByHour[h] = [];
+        jobsByHour[h].push(job);
+      }
+    } else if (hours) {
+      for (const h of hours) {
+        if (!jobsByHour[h]) jobsByHour[h] = [];
+        jobsByHour[h].push(job);
+      }
     }
   }
 

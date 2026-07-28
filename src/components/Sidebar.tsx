@@ -164,6 +164,9 @@ export function Sidebar({ currentView, onNavigate }: SidebarProps) {
           <span className="text-xs text-muted-foreground">
             {loading ? "Scanning..." : "Live"}
           </span>
+          {filtersActive && (
+            <span className="ml-auto text-[10px] text-yellow-400/80">filtered</span>
+          )}
         </div>
         {!loading && filteredJobs.length > 0 && (
           <p className="text-xs text-muted-foreground pl-4">

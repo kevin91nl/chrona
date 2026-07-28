@@ -2,6 +2,7 @@ import { useSchedulers, useFilteredJobs as useJobs } from "@hooks/useJobs";
 import { useFilters } from "@contexts/FilterContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/Card";
 import { Badge } from "@components/ui/Badge";
+import { formatRelativeTime } from "@/utils";
 
 function providerColor(id: string): string {
   switch (id) {
@@ -122,6 +123,14 @@ export function SystemMap() {
                         <p className="text-xs text-muted-foreground">
                           {job.schedule}
                         </p>
+                        {job.nextExecution && (
+                          <p className="text-xs text-primary">
+                            Next: {formatRelativeTime(job.nextExecution)}
+                          </p>
+                        )}
+                        {!job.enabled && (
+                          <p className="text-xs text-yellow-400">Paused</p>
+                        )}
                       </div>
                     ))}
                   </div>
