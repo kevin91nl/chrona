@@ -4,10 +4,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/Card";
 import { Badge } from "@components/ui/Badge";
 import { formatSchedule, formatRelativeTime } from "@/utils";
 import { Search } from "lucide-react";
+import { JobDetail } from "./JobDetail";
+import type { Job } from "@models/index";
 
 export function JobExplorer() {
   const { jobs, loading } = useJobs();
   const [search, setSearch] = useState("");
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+
+  // If a job is selected, show detail view
+  if (selectedJob) {
+    return (
+      <JobDetail
+        job={selectedJob}
+        onBack={() => setSelectedJob(null)}
+      />
+    );
+  }
 
   const filtered = jobs?.filter(
     (j) =>
@@ -52,6 +65,7 @@ export function JobExplorer() {
               {filtered.map((job) => (
                 <div
                   key={job.id}
+                  onClick={() => setSelectedJob(job)}
                   className="flex items-center justify-between rounded-md border p-3 transition-colors hover:bg-accent cursor-pointer"
                 >
                   <div className="flex items-center gap-3">

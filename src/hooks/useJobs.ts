@@ -139,6 +139,22 @@ const DEMO_JOBS: Job[] = [
     previousExecution: "2026-07-28T08:30:00Z",
   },
   {
+    id: "codex-hands-off-data-quality-repair",
+    name: "Hands-off data-quality repair",
+    provider: "codex",
+    source: "~/.codex/automations/hands-off-data-quality-repair/automation.toml",
+    schedule: "Every 15 minutes",
+    timezone: null,
+    command: "codex automation: hands-off-data-quality-repair [gpt-5.6-sol]",
+    workingDirectory: "/Users/kevin/projects/riskstudio/riskstudio-worker",
+    status: "active",
+    enabled: true,
+    discoveredAt: "2026-07-28T08:00:00Z",
+    updatedAt: "2026-07-28T12:03:00Z",
+    nextExecution: "2026-07-28T13:15:00Z",
+    previousExecution: "2026-07-28T13:00:00Z",
+  },
+  {
     id: "cron-failing-job",
     name: "DB Health Check",
     provider: "cron",
@@ -159,15 +175,16 @@ const DEMO_JOBS: Job[] = [
 const DEMO_SCHEDULERS: SchedulerInfo[] = [
   { id: "cron", name: "cron", available: true, jobCount: 4 },
   { id: "launchd", name: "launchd", available: true, jobCount: 1 },
+  { id: "codex", name: "Codex Scheduled Tasks", available: true, jobCount: 1 },
   { id: "systemd", name: "systemd timers", available: false, jobCount: 0 },
   { id: "windows-task", name: "Windows Task Scheduler", available: false, jobCount: 0 },
 ];
 
 const DEMO_STATS: DiscoveryStats = {
-  totalJobs: 5,
-  activeJobs: 4,
+  totalJobs: 6,
+  activeJobs: 5,
   failedJobs: 1,
-  schedulersDetected: 2,
+  schedulersDetected: 3,
   nextScheduled: {
     job: DEMO_JOBS[3],
     time: "Today at 09:00",

@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Dashboard } from "@components/dashboard/Dashboard";
 import { Timeline } from "@components/timeline/Timeline";
 import { JobExplorer } from "@components/jobs/JobExplorer";
+import { CalendarView } from "@components/calendar/CalendarView";
+import { SystemMap } from "@components/system/SystemMap";
 import { Sidebar } from "@components/Sidebar";
 import type { View } from "@models/index";
 
@@ -16,6 +18,10 @@ function App() {
         return <Timeline />;
       case "jobs":
         return <JobExplorer />;
+      case "calendar":
+        return <CalendarView />;
+      case "system":
+        return <SystemMap />;
       default:
         return <Dashboard />;
     }

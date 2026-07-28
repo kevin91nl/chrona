@@ -1,4 +1,5 @@
 import { cn } from "@/utils";
+import { useDiscoveryStats } from "@hooks/useJobs";
 import {
   LayoutDashboard,
   Clock,
@@ -23,6 +24,8 @@ const navItems: { view: View; label: string; icon: typeof LayoutDashboard }[] = 
 ];
 
 export function Sidebar({ currentView, onNavigate }: SidebarProps) {
+  const { stats, loading } = useDiscoveryStats();
+
   return (
     <aside className="flex w-56 flex-col border-r bg-card">
       {/* Logo */}
@@ -51,11 +54,24 @@ export function Sidebar({ currentView, onNavigate }: SidebarProps) {
       </nav>
 
       {/* Status footer */}
-      <div className="border-t px-4 py-3">
+      <div className="border-t px-4 py-3 space-y-1">
         <div className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-xs text-muted-foreground">Scanning...</span>
+          <div
+            className={`h-2 w-2 rounded-full ${
+              loading
+                ? "bg-yellow-500 animate-pulse"
+                : "bg-green-500"
+            }`}
+          />
+          <span className="text-xs text-muted-foreground">
+            {loading ? "Scanning..." : "Live"}
+          </span>
         </div>
+        {stats && !loading && (
+          <p className="text-xs text-muted-foreground pl-4">
+            {stats.totalJobs} jobs across {stats.schedulersDetected} schedulers
+          </p>
+        )}
       </div>
     </aside>
   );

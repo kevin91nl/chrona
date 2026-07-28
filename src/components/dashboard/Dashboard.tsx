@@ -44,9 +44,9 @@ export function Dashboard() {
         />
         <StatCard
           icon={<Clock className="h-5 w-5" />}
-          label="Running Today"
+          label="Active Jobs"
           value={stats?.activeJobs ?? 0}
-          description="Scheduled"
+          description="Enabled"
         />
         <StatCard
           icon={<AlertTriangle className="h-5 w-5" />}
