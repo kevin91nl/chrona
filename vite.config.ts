@@ -12,6 +12,7 @@ export default defineConfig(async () => ({
       "@components": path.resolve(__dirname, "./src/components"),
       "@hooks": path.resolve(__dirname, "./src/hooks"),
       "@models": path.resolve(__dirname, "./src/types"),
+      "@contexts": path.resolve(__dirname, "./src/contexts"),
     },
   },
   clearScreen: false,

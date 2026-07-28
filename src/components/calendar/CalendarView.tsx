@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useJobs } from "@hooks/useJobs";
+import { useFilteredJobs as useJobs } from "@hooks/useJobs";
 import { Card, CardContent } from "@components/ui/Card";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);

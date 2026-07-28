@@ -23,7 +23,8 @@
       "@/*": ["./src/lib/*"],
       "@components/*": ["./src/components/*"],
       "@hooks/*": ["./src/hooks/*"],
-      "@models/*": ["./src/types/*"]
+      "@models/*": ["./src/types/*"],
+      "@contexts/*": ["./src/contexts/*"]
     }
   },
   "include": ["src"]

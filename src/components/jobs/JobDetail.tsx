@@ -1,15 +1,57 @@
+import { useState } from "react";
 import type { Job } from "@models/index";
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/Card";
 import { Badge } from "@components/ui/Badge";
 import { formatSchedule, formatRelativeTime } from "@/utils";
-import { ArrowLeft, Clock, Folder, FileText, Terminal } from "lucide-react";
+import { toggleJobEnabled, removeJob } from "@/tauri";
+import {
+  ArrowLeft,
+  Clock,
+  Folder,
+  FileText,
+  Terminal,
+  Pause,
+  Play,
+  Trash2,
+  Loader2,
+} from "lucide-react";
 
 interface JobDetailProps {
   job: Job;
   onBack: () => void;
+  onJobChanged?: () => void;
 }
 
-export function JobDetail({ job, onBack }: JobDetailProps) {
+export function JobDetail({ job, onBack, onJobChanged }: JobDetailProps) {
+  const [currentJob, setCurrentJob] = useState(job);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const handleToggle = async () => {
+    setBusy("toggle");
+    try {
+      const updated = await toggleJobEnabled(currentJob.id);
+      setCurrentJob(updated);
+      onJobChanged?.();
+    } catch (e) {
+      console.error("Toggle failed:", e);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm(`Delete "${currentJob.name}"?`)) return;
+    setBusy("delete");
+    try {
+      await removeJob(currentJob.id);
+      onJobChanged?.();
+      onBack();
+    } catch (e) {
+      console.error("Delete failed:", e);
+      setBusy(null);
+    }
+  };
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center gap-3">
@@ -22,33 +64,69 @@ export function JobDetail({ job, onBack }: JobDetailProps) {
         </button>
       </div>
 
-      <div className="flex items-center gap-3">
-        <div
-          className={`h-3 w-3 rounded-full ${
-            job.status === "error"
-              ? "bg-red-500"
-              : job.enabled
-                ? "bg-green-500"
-                : "bg-muted-foreground"
-          }`}
-        />
-        <h1 className="text-2xl font-bold">{job.name}</h1>
-        <Badge variant="muted">{job.provider}</Badge>
-        <Badge
-          variant={
-            job.status === "error"
-              ? "error"
-              : job.enabled
-                ? "success"
-                : "warning"
-          }
-        >
-          {job.status === "error"
-            ? "Error"
-            : job.enabled
-              ? "Enabled"
-              : "Disabled"}
-        </Badge>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div
+            className={`h-3 w-3 rounded-full ${
+              currentJob.status === "error"
+                ? "bg-red-500"
+                : currentJob.enabled
+                  ? "bg-green-500"
+                  : "bg-muted-foreground"
+            }`}
+          />
+          <h1 className="text-2xl font-bold">{currentJob.name}</h1>
+          <Badge variant="muted">{currentJob.provider}</Badge>
+          <Badge
+            variant={
+              currentJob.status === "error"
+                ? "error"
+                : currentJob.enabled
+                  ? "success"
+                  : "warning"
+            }
+          >
+            {currentJob.status === "error"
+              ? "Error"
+              : currentJob.enabled
+                ? "Enabled"
+                : "Disabled"}
+          </Badge>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleToggle}
+            disabled={busy !== null}
+            className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${
+              currentJob.enabled
+                ? "bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 border border-yellow-500/30"
+                : "bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/30"
+            }`}
+          >
+            {busy === "toggle" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : currentJob.enabled ? (
+              <Pause className="h-4 w-4" />
+            ) : (
+              <Play className="h-4 w-4" />
+            )}
+            {currentJob.enabled ? "Disable" : "Enable"}
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={busy !== null}
+            className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/30 transition-colors disabled:opacity-50"
+          >
+            {busy === "delete" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+            Delete
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-6">
@@ -62,7 +140,7 @@ export function JobDetail({ job, onBack }: JobDetailProps) {
               <Terminal className="h-4 w-4 mt-0.5 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">Command</p>
-                <p className="font-mono text-sm">{job.command}</p>
+                <p className="font-mono text-sm">{currentJob.command}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -70,9 +148,9 @@ export function JobDetail({ job, onBack }: JobDetailProps) {
               <div>
                 <p className="text-sm text-muted-foreground">Schedule</p>
                 <p className="font-mono text-sm">
-                  {job.schedule}{" "}
+                  {currentJob.schedule}{" "}
                   <span className="text-muted-foreground">
-                    ({formatSchedule(job.schedule)})
+                    ({formatSchedule(currentJob.schedule)})
                   </span>
                 </p>
               </div>
@@ -81,24 +159,28 @@ export function JobDetail({ job, onBack }: JobDetailProps) {
               <FileText className="h-4 w-4 mt-0.5 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">Source</p>
-                <p className="font-mono text-sm break-all">{job.source}</p>
+                <p className="font-mono text-sm break-all">
+                  {currentJob.source}
+                </p>
               </div>
             </div>
-            {job.workingDirectory && (
+            {currentJob.workingDirectory && (
               <div className="flex items-start gap-3">
                 <Folder className="h-4 w-4 mt-0.5 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">
                     Working Directory
                   </p>
-                  <p className="font-mono text-sm">{job.workingDirectory}</p>
+                  <p className="font-mono text-sm">
+                    {currentJob.workingDirectory}
+                  </p>
                 </div>
               </div>
             )}
-            {job.timezone && (
+            {currentJob.timezone && (
               <div>
                 <p className="text-sm text-muted-foreground">Timezone</p>
-                <p className="text-sm">{job.timezone}</p>
+                <p className="text-sm">{currentJob.timezone}</p>
               </div>
             )}
           </CardContent>
@@ -113,13 +195,13 @@ export function JobDetail({ job, onBack }: JobDetailProps) {
             <div>
               <p className="text-sm text-muted-foreground">Next Execution</p>
               <p className="text-sm font-medium">
-                {job.nextExecution
-                  ? formatRelativeTime(job.nextExecution)
+                {currentJob.nextExecution
+                  ? formatRelativeTime(currentJob.nextExecution)
                   : "Unknown"}
               </p>
-              {job.nextExecution && (
+              {currentJob.nextExecution && (
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {new Date(job.nextExecution).toLocaleString()}
+                  {new Date(currentJob.nextExecution).toLocaleString()}
                 </p>
               )}
             </div>
@@ -128,30 +210,30 @@ export function JobDetail({ job, onBack }: JobDetailProps) {
                 Previous Execution
               </p>
               <p className="text-sm font-medium">
-                {job.previousExecution
-                  ? formatRelativeTime(job.previousExecution)
+                {currentJob.previousExecution
+                  ? formatRelativeTime(currentJob.previousExecution)
                   : "None"}
               </p>
-              {job.previousExecution && (
+              {currentJob.previousExecution && (
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {new Date(job.previousExecution).toLocaleString()}
+                  {new Date(currentJob.previousExecution).toLocaleString()}
                 </p>
               )}
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Provider</p>
-              <p className="text-sm">{job.provider}</p>
+              <p className="text-sm">{currentJob.provider}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Discovered</p>
               <p className="text-sm">
-                {new Date(job.discoveredAt).toLocaleString()}
+                {new Date(currentJob.discoveredAt).toLocaleString()}
               </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Last Updated</p>
               <p className="text-sm">
-                {new Date(job.updatedAt).toLocaleString()}
+                {new Date(currentJob.updatedAt).toLocaleString()}
               </p>
             </div>
           </CardContent>

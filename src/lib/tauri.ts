@@ -24,3 +24,11 @@ export async function getDiscoveryStats(): Promise<DiscoveryStats> {
 export async function triggerDiscovery(): Promise<void> {
   return invoke("trigger_discovery");
 }
+
+export async function toggleJobEnabled(id: string): Promise<Job> {
+  return invoke("toggle_job_enabled", { id });
+}
+
+export async function removeJob(id: string): Promise<void> {
+  return invoke("remove_job", { id });
+}

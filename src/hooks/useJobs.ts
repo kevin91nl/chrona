@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { getJobs, getSchedulers, getDiscoveryStats } from "@/tauri";
+import { useFilters } from "@contexts/FilterContext";
 import type { Job, SchedulerInfo, DiscoveryStats } from "@models/index";
 
-export function useJobs() {
+export function useJobs(refreshKey?: number) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -21,9 +22,21 @@ export function useJobs() {
     load();
     const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [refreshKey]);
 
   return { jobs, loading };
+}
+
+export function useFilteredJobs(refreshKey?: number) {
+  const { jobs, loading } = useJobs(refreshKey);
+  const { isProviderEnabled } = useFilters();
+
+  const filtered = useMemo(
+    () => (jobs ?? []).filter((j) => isProviderEnabled(j.provider)),
+    [jobs, isProviderEnabled],
+  );
+
+  return { jobs: filtered, loading };
 }
 
 export function useSchedulers() {

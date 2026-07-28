@@ -226,3 +226,40 @@ fn parse_timestamp(s: String) -> DateTime<Utc> {
         .map(|dt| dt.with_timezone(&Utc))
         .unwrap_or_else(|_| Utc::now())
 }
+
+pub struct SettingsRepository {
+    db: Arc<Database>,
+}
+
+impl SettingsRepository {
+    pub fn new(db: Arc<Database>) -> Self {
+        Self { db }
+    }
+
+    pub fn get(&self, key: &str) -> Result<Option<String>, rusqlite::Error> {
+        let conn = self.db.conn();
+        let mut stmt = conn.prepare("SELECT value FROM settings WHERE key = ?1")?;
+        let mut rows = stmt.query_map(params![key], |row| row.get::<_, String>(0))?;
+        match rows.next() {
+            Some(val) => Ok(Some(val?)),
+            None => Ok(None),
+        }
+    }
+
+    pub fn set(&self, key: &str, value: &str) -> Result<(), rusqlite::Error> {
+        let conn = self.db.conn();
+        let now = Utc::now().to_rfc3339();
+        conn.execute(
+            "INSERT INTO settings (key, value, updated_at) VALUES (?1, ?2, ?3)
+             ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at",
+            params![key, value, now],
+        )?;
+        Ok(())
+    }
+
+    pub fn delete(&self, key: &str) -> Result<(), rusqlite::Error> {
+        let conn = self.db.conn();
+        conn.execute("DELETE FROM settings WHERE key = ?1", params![key])?;
+        Ok(())
+    }
+}

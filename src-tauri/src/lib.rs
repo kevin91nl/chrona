@@ -4,7 +4,7 @@ mod discovery;
 mod models;
 mod providers;
 
-use db::{Database, JobRepository};
+use db::{Database, JobRepository, SettingsRepository};
 use discovery::DiscoveryEngine;
 use providers::*;
 use std::sync::Arc;
@@ -12,6 +12,7 @@ use tauri::Manager;
 
 pub struct AppState {
     pub repo: Arc<JobRepository>,
+    pub settings: Arc<SettingsRepository>,
     pub discovery: DiscoveryEngine,
 }
 
@@ -33,6 +34,7 @@ pub fn run() {
             let db = Database::new(&db_path).expect("Failed to open database");
             let db = Arc::new(db);
             let repo = Arc::new(JobRepository::new(db.clone()));
+            let settings = Arc::new(SettingsRepository::new(db.clone()));
 
             // Register providers
             let providers: Vec<Box<dyn SchedulerProvider>> = vec![
@@ -53,6 +55,7 @@ pub fn run() {
 
             app.manage(AppState {
                 repo,
+                settings,
                 discovery,
             });
 
@@ -65,6 +68,10 @@ pub fn run() {
             commands::get_schedulers,
             commands::get_discovery_stats,
             commands::trigger_discovery,
+            commands::get_setting,
+            commands::set_setting,
+            commands::toggle_job_enabled,
+            commands::remove_job,
         ])
         .run(tauri::generate_context!())
         .expect("Error running Chrona");

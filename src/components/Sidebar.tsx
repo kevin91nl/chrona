@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { cn } from "@/utils";
-import { useDiscoveryStats } from "@hooks/useJobs";
+import { useDiscoveryStats, useSchedulers } from "@hooks/useJobs";
+import { useFilters } from "@contexts/FilterContext";
 import {
   LayoutDashboard,
   Clock,
@@ -7,6 +9,9 @@ import {
   Calendar,
   Network,
   Activity,
+  Filter,
+  RotateCcw,
+  ChevronDown,
 } from "lucide-react";
 import type { View } from "@models/index";
 
@@ -23,8 +28,33 @@ const navItems: { view: View; label: string; icon: typeof LayoutDashboard }[] = 
   { view: "system", label: "System Map", icon: Network },
 ];
 
+const PROVIDER_COLORS: Record<string, string> = {
+  cron: "bg-blue-500",
+  launchd: "bg-green-500",
+  codex: "bg-purple-500",
+  systemd: "bg-orange-500",
+  "windows-task": "bg-cyan-500",
+};
+
 export function Sidebar({ currentView, onNavigate }: SidebarProps) {
   const { stats, loading } = useDiscoveryStats();
+  const { schedulers } = useSchedulers();
+  const {
+    enabledProviders,
+    toggleProvider,
+    isProviderEnabled,
+    resetFilters,
+    filtersActive,
+  } = useFilters();
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // Build provider list: discovered schedulers + any known but undiscovered
+  const allProviderIds = [
+    ...new Set([
+      ...(schedulers ?? []).map((s) => s.id),
+      ...Object.keys(PROVIDER_COLORS),
+    ]),
+  ];
 
   return (
     <aside className="flex w-56 flex-col border-r bg-card">
@@ -53,14 +83,82 @@ export function Sidebar({ currentView, onNavigate }: SidebarProps) {
         ))}
       </nav>
 
+      {/* Filters */}
+      <div className="border-t px-3 py-2">
+        <button
+          onClick={() => setFiltersOpen(!filtersOpen)}
+          className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <span className="flex items-center gap-2">
+            <Filter className="h-4 w-4" />
+            Filters
+            {filtersActive && (
+              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                {enabledProviders.size}
+              </span>
+            )}
+          </span>
+          <ChevronDown
+            className={cn(
+              "h-3.5 w-3.5 transition-transform",
+              filtersOpen && "rotate-180",
+            )}
+          />
+        </button>
+
+        {filtersOpen && (
+          <div className="mt-2 space-y-1">
+            {allProviderIds.map((id) => {
+              const scheduler = schedulers?.find((s) => s.id === id);
+              const label = scheduler?.name ?? id;
+              const checked = isProviderEnabled(id);
+              return (
+                <label
+                  key={id}
+                  className={cn(
+                    "flex items-center gap-2 rounded-md px-2 py-1.5 text-xs cursor-pointer transition-colors",
+                    checked
+                      ? "text-foreground hover:bg-accent"
+                      : "text-muted-foreground/50",
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleProvider(id)}
+                    className="h-3.5 w-3.5 rounded border-muted-foreground accent-primary"
+                  />
+                  <div
+                    className={cn(
+                      "h-2 w-2 rounded-full",
+                      PROVIDER_COLORS[id] ?? "bg-muted-foreground",
+                      !checked && "opacity-30",
+                    )}
+                  />
+                  <span className="truncate">{label}</span>
+                </label>
+              );
+            })}
+
+            {filtersActive && (
+              <button
+                onClick={resetFilters}
+                className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mt-1"
+              >
+                <RotateCcw className="h-3 w-3" />
+                Show all
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Status footer */}
       <div className="border-t px-4 py-3 space-y-1">
         <div className="flex items-center gap-2">
           <div
             className={`h-2 w-2 rounded-full ${
-              loading
-                ? "bg-yellow-500 animate-pulse"
-                : "bg-green-500"
+              loading ? "bg-yellow-500 animate-pulse" : "bg-green-500"
             }`}
           />
           <span className="text-xs text-muted-foreground">

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FilterProvider } from "@contexts/FilterContext";
 import { Dashboard } from "@components/dashboard/Dashboard";
 import { Timeline } from "@components/timeline/Timeline";
 import { JobExplorer } from "@components/jobs/JobExplorer";
@@ -28,10 +29,12 @@ function App() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar currentView={currentView} onNavigate={setCurrentView} />
-      <main className="flex-1 overflow-auto">{renderView()}</main>
-    </div>
+    <FilterProvider>
+      <div className="flex h-screen overflow-hidden">
+        <Sidebar currentView={currentView} onNavigate={setCurrentView} />
+        <main className="flex-1 overflow-auto">{renderView()}</main>
+      </div>
+    </FilterProvider>
   );
 }
 

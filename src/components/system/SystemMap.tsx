@@ -1,4 +1,4 @@
-import { useSchedulers, useJobs } from "@hooks/useJobs";
+import { useSchedulers, useFilteredJobs as useJobs } from "@hooks/useJobs";
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/Card";
 import { Badge } from "@components/ui/Badge";
 

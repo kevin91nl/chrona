@@ -1,16 +1,22 @@
-import { useState } from "react";
-import { useJobs } from "@hooks/useJobs";
+import { useState, useCallback } from "react";
+import { useFilteredJobs as useJobs } from "@hooks/useJobs";
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/Card";
 import { Badge } from "@components/ui/Badge";
 import { formatSchedule, formatRelativeTime } from "@/utils";
-import { Search } from "lucide-react";
+import { toggleJobEnabled, removeJob } from "@/tauri";
+import { Search, Pause, Play, Trash2 } from "lucide-react";
 import { JobDetail } from "./JobDetail";
 import type { Job } from "@models/index";
 
 export function JobExplorer() {
-  const { jobs, loading } = useJobs();
+  const [refreshKey, setRefreshKey] = useState(0);
+  const { jobs, loading } = useJobs(refreshKey);
   const [search, setSearch] = useState("");
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+
+  const refresh = useCallback(() => {
+    setRefreshKey((k) => k + 1);
+  }, []);
 
   // If a job is selected, show detail view
   if (selectedJob) {
@@ -18,9 +24,31 @@ export function JobExplorer() {
       <JobDetail
         job={selectedJob}
         onBack={() => setSelectedJob(null)}
+        onJobChanged={refresh}
       />
     );
   }
+
+  const handleQuickToggle = async (e: React.MouseEvent, job: Job) => {
+    e.stopPropagation();
+    try {
+      await toggleJobEnabled(job.id);
+      refresh();
+    } catch (err) {
+      console.error("Toggle failed:", err);
+    }
+  };
+
+  const handleQuickDelete = async (e: React.MouseEvent, job: Job) => {
+    e.stopPropagation();
+    if (!confirm(`Delete "${job.name}"?`)) return;
+    try {
+      await removeJob(job.id);
+      refresh();
+    } catch (err) {
+      console.error("Delete failed:", err);
+    }
+  };
 
   const filtered = jobs?.filter(
     (j) =>
@@ -66,7 +94,7 @@ export function JobExplorer() {
                 <div
                   key={job.id}
                   onClick={() => setSelectedJob(job)}
-                  className="flex items-center justify-between rounded-md border p-3 transition-colors hover:bg-accent cursor-pointer"
+                  className="group flex items-center justify-between rounded-md border p-3 transition-colors hover:bg-accent cursor-pointer"
                 >
                   <div className="flex items-center gap-3">
                     <div
@@ -85,7 +113,7 @@ export function JobExplorer() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-2 text-sm">
                     <span className="text-muted-foreground">
                       {formatSchedule(job.schedule)}
                     </span>
@@ -95,6 +123,31 @@ export function JobExplorer() {
                         {formatRelativeTime(job.nextExecution)}
                       </span>
                     )}
+                    {/* Quick actions — visible on hover */}
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                      <button
+                        onClick={(e) => handleQuickToggle(e, job)}
+                        title={job.enabled ? "Disable" : "Enable"}
+                        className={`rounded p-1 transition-colors ${
+                          job.enabled
+                            ? "text-yellow-400 hover:bg-yellow-500/20"
+                            : "text-green-400 hover:bg-green-500/20"
+                        }`}
+                      >
+                        {job.enabled ? (
+                          <Pause className="h-3.5 w-3.5" />
+                        ) : (
+                          <Play className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                      <button
+                        onClick={(e) => handleQuickDelete(e, job)}
+                        title="Delete"
+                        className="rounded p-1 text-red-400 hover:bg-red-500/20 transition-colors"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}

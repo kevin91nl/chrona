@@ -69,6 +69,37 @@ pub fn trigger_discovery(state: State<AppState>) -> Result<(), String> {
     state.discovery.discover_all().map(|_| ())
 }
 
+#[tauri::command]
+pub fn get_setting(state: State<AppState>, key: String) -> Result<Option<String>, String> {
+    state.settings.get(&key).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn set_setting(state: State<AppState>, key: String, value: String) -> Result<(), String> {
+    state.settings.set(&key, &value).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn toggle_job_enabled(state: State<AppState>, id: String) -> Result<Job, String> {
+    let job = state
+        .repo
+        .get_job(&id)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Job not found".to_string())?;
+
+    let mut updated = job.clone();
+    updated.enabled = !job.enabled;
+    updated.updated_at = chrono::Utc::now();
+
+    state.repo.upsert_job(&updated).map_err(|e| e.to_string())?;
+    Ok(updated)
+}
+
+#[tauri::command]
+pub fn remove_job(state: State<AppState>, id: String) -> Result<(), String> {
+    state.repo.delete_job(&id).map_err(|e| e.to_string())
+}
+
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DiscoveryStats {

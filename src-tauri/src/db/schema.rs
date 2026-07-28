@@ -62,6 +62,12 @@ impl Database {
             CREATE INDEX IF NOT EXISTS idx_jobs_enabled ON jobs(enabled);
             CREATE INDEX IF NOT EXISTS idx_executions_job_id ON executions(job_id);
             CREATE INDEX IF NOT EXISTS idx_executions_start_time ON executions(start_time);
+
+            CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
             ",
         )?;
         Ok(())
