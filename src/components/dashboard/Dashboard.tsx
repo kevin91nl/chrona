@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { useDiscoveryStats, useSchedulers, useFilteredJobs } from "@hooks/useJobs";
+import { useSchedulers, useFilteredJobs } from "@hooks/useJobs";
+import { useFilters } from "@contexts/FilterContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/Card";
 import { StatCard } from "@components/ui/StatCard";
 import { Badge } from "@components/ui/Badge";
@@ -11,9 +12,9 @@ interface DashboardProps {
 }
 
 export function Dashboard({ onNavigate }: DashboardProps) {
-  const { stats, loading: statsLoading } = useDiscoveryStats();
+  const { isProviderEnabled } = useFilters();
   const { schedulers, loading: schedulersLoading } = useSchedulers();
-  const { jobs: filteredJobs } = useFilteredJobs();
+  const { jobs: filteredJobs, loading: statsLoading } = useFilteredJobs();
 
   const filteredStats = useMemo(() => {
     if (!filteredJobs) return null;
@@ -34,16 +35,18 @@ export function Dashboard({ onNavigate }: DashboardProps) {
   }, [filteredJobs]);
 
   const filteredSchedulers = useMemo(() => {
-    if (!schedulers || !filteredJobs) return schedulers;
+    if (!schedulers) return schedulers;
     const providerCounts = new Map<string, number>();
-    for (const j of filteredJobs) {
+    for (const j of filteredJobs ?? []) {
       providerCounts.set(j.provider, (providerCounts.get(j.provider) ?? 0) + 1);
     }
-    return schedulers.map((s) => ({
-      ...s,
-      jobCount: providerCounts.get(s.id) ?? 0,
-    }));
-  }, [schedulers, filteredJobs]);
+    return schedulers
+      .filter((s) => isProviderEnabled(s.id))
+      .map((s) => ({
+        ...s,
+        jobCount: providerCounts.get(s.id) ?? 0,
+      }));
+  }, [schedulers, filteredJobs, isProviderEnabled]);
 
   if (statsLoading || schedulersLoading) {
     return (
@@ -56,7 +59,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
     );
   }
 
-  const displayStats = filteredStats ?? stats;
+  const displayStats = filteredStats;
 
   return (
     <div className="space-y-6 p-6">

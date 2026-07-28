@@ -1,4 +1,5 @@
 import { useSchedulers, useFilteredJobs as useJobs } from "@hooks/useJobs";
+import { useFilters } from "@contexts/FilterContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/Card";
 import { Badge } from "@components/ui/Badge";
 
@@ -37,8 +38,11 @@ function providerIcon(id: string): string {
 }
 
 export function SystemMap() {
+  const { isProviderEnabled } = useFilters();
   const { schedulers, loading: schedulersLoading } = useSchedulers();
   const { jobs, loading: jobsLoading } = useJobs();
+
+  const filteredSchedulers = (schedulers ?? []).filter((s) => isProviderEnabled(s.id));
 
   if (schedulersLoading || jobsLoading) {
     return (
@@ -58,7 +62,7 @@ export function SystemMap() {
       </div>
 
       <div className="grid gap-6">
-        {schedulers?.map((scheduler) => {
+        {filteredSchedulers.map((scheduler) => {
           const schedulerJobs = (jobs ?? []).filter(
             (j) => j.provider === scheduler.id,
           );
