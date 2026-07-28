@@ -4,7 +4,7 @@ import { useFilters } from "@contexts/FilterContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/Card";
 import { StatCard } from "@components/ui/StatCard";
 import { Badge } from "@components/ui/Badge";
-import { Activity, Clock, AlertTriangle, Server, Zap, ChevronRight } from "lucide-react";
+import { Activity, Clock, AlertTriangle, Server, Zap } from "lucide-react";
 import type { View } from "@models/index";
 
 interface DashboardProps {
@@ -40,12 +40,14 @@ export function Dashboard({ onNavigate }: DashboardProps) {
     for (const j of filteredJobs ?? []) {
       providerCounts.set(j.provider, (providerCounts.get(j.provider) ?? 0) + 1);
     }
-    return schedulers
+    // Enabled first, filtered-out last (greyed out)
+    const enabled = schedulers
       .filter((s) => isProviderEnabled(s.id))
-      .map((s) => ({
-        ...s,
-        jobCount: providerCounts.get(s.id) ?? 0,
-      }));
+      .map((s) => ({ ...s, jobCount: providerCounts.get(s.id) ?? 0, filtered: false }));
+    const disabled = schedulers
+      .filter((s) => !isProviderEnabled(s.id))
+      .map((s) => ({ ...s, jobCount: providerCounts.get(s.id) ?? 0, filtered: true }));
+    return [...enabled, ...disabled];
   }, [schedulers, filteredJobs, isProviderEnabled]);
 
   if (statsLoading || schedulersLoading) {
@@ -110,24 +112,33 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                 <div
                   key={s.id}
                   onClick={() => onNavigate?.("system")}
-                  className="flex items-center justify-between rounded-md border p-3 cursor-pointer hover:bg-accent transition-colors"
+                  className={`flex items-center justify-between rounded-md border p-3 transition-colors ${
+                    s.filtered
+                      ? "opacity-40 cursor-default"
+                      : "cursor-pointer hover:bg-accent"
+                  }`}
                 >
                   <div className="flex items-center gap-3">
                     <div
                       className={`h-2 w-2 rounded-full ${
-                        s.available ? "bg-green-500" : "bg-muted-foreground"
+                        !s.available
+                          ? "bg-muted-foreground"
+                          : s.filtered
+                            ? "bg-muted-foreground"
+                            : "bg-green-500"
                       }`}
                     />
-                    <span className="font-medium">{s.name}</span>
+                    <span className={s.filtered ? "text-muted-foreground" : "font-medium"}>
+                      {s.name}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">
                       {s.jobCount} jobs
                     </span>
-                    <Badge variant={s.available ? "success" : "muted"}>
-                      {s.available ? "Active" : "Unavailable"}
+                    <Badge variant={s.filtered ? "muted" : s.available ? "success" : "muted"}>
+                      {s.filtered ? "Filtered" : s.available ? "Active" : "Unavailable"}
                     </Badge>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </div>
                 </div>
               ))}
