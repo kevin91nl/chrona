@@ -1,0 +1,31 @@
+[package]
+name = "chrona"
+version = "0.1.0"
+edition = "2021"
+description = "Automatic scheduling observability for your machine"
+license = "MIT"
+
+[lib]
+name = "chrona_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[[bin]]
+name = "chrona"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rusqlite = { version = "0.32", features = ["bundled"] }
+chrono = { version = "0.4", features = ["serde"] }
+tokio = { version = "1", features = ["full"] }
+thiserror = "2"
+uuid = { version = "1", features = ["v4", "serde"] }
+glob = "0.3"
+log = "0.4"
+env_logger = "0.11"

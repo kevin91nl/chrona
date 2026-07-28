@@ -1,0 +1,32 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicholasrice/tauri/dev/packages/cli/schema.json",
+  "productName": "Chrona",
+  "version": "0.1.0",
+  "identifier": "com.chrona.app",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Chrona",
+        "width": 1200,
+        "height": 800,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "plugins": {
+    "shell": {
+      "open": true
+    }
+  }
+}
